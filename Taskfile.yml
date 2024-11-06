@@ -1,46 +1,149 @@
 version: '3'
 
+vars:
+  PYTHON: 'python3.9'
+  VENV: '.venv'
+  PYTHON_BIN: '{{.VENV}}/bin/python'
+  PIP: '{{.VENV}}/bin/pip'
+  UV: 'uv'
+
 tasks:
-  setup:
-    desc: Create and setup virtual environment
+  default:
+    desc: Show available tasks
     cmds:
-      - uv venv
-      - .venv/bin/uv pip install -e .
-      - .venv/bin/uv pip install -r requirements-dev.txt
+      - task --list
 
-  test:
-    desc: Run tests with pytest
+  venv:create:
+    desc: Create a new virtual environment
     cmds:
-      - source .venv/bin/activate && pytest tests/ -v
+      - '{{.UV}} venv'
+      - echo "Virtual environment created in {{.VENV}}"
 
-  docs:
-    desc: Build and serve documentation
+  venv:activate:
+    desc: Activate the virtual environment
     cmds:
-      - source .venv/bin/activate && mkdocs serve
+      - source {{.VENV}}/bin/activate
 
-  docs-build:
-    desc: Build documentation
+  deps:install:
+    desc: Install project dependencies
+    deps: [venv:create]
     cmds:
-      - source .venv/bin/activate && mkdocs build
+      - '{{.UV}} pip install -e ".[dev,sensors,logging,alerts]"'
+    sources:
+      - pyproject.toml
+    generates:
+      - '{{.VENV}}/bin/activate'
+
+  deps:update:
+    desc: Update project dependencies
+    cmds:
+      - '{{.UV}} pip install --upgrade -e ".[dev,sensors,logging,alerts]"'
 
   lint:
-    desc: Run linting and type checking
+    desc: Run linters and type checkers
+    deps: [deps:install]
     cmds:
-      - source .venv/bin/activate && ruff check .
-      - source .venv/bin/activate && mypy .
+      - '{{.VENV}}/bin/ruff check backend tests'
+      - '{{.VENV}}/bin/mypy backend'
+      - '{{.VENV}}/bin/black --check backend tests'
 
   format:
-    desc: Format code
+    desc: Format code using black and isort
+    deps: [deps:install]
     cmds:
-      - source .venv/bin/activate && ruff format .
+      - '{{.VENV}}/bin/black backend tests'
+      - '{{.VENV}}/bin/isort backend tests'
 
-  run:
-    desc: Run the application
+  test:
+    desc: Run pytest with coverage
+    deps: [deps:install]
     cmds:
-      - source .venv/bin/activate && python -m better_file_manager
+      - '{{.VENV}}/bin/pytest --cov=backend --cov-report=term-missing'
+
+  test:watch:
+    desc: Run tests in watch mode
+    deps: [deps:install]
+    cmds:
+      - '{{.VENV}}/bin/ptw -- --cov=backend'
+
+  docs:build:
+    desc: Build documentation
+    deps: [deps:install]
+    cmds:
+      - '{{.VENV}}/bin/mkdocs build'
+
+  docs:serve:
+    desc: Serve documentation locally
+    deps: [deps:install]
+    cmds:
+      - '{{.VENV}}/bin/mkdocs serve'
+
+  example:run:
+    desc: Run the example weather station script
+    deps: [deps:install]
+    cmds:
+      - '{{.PYTHON_BIN}} -m backend.example'
+
+  station:run:
+    desc: Run the main weather station script
+    deps: [deps:install]
+    cmds:
+      - '{{.PYTHON_BIN}} -m backend.main'
+
+  station:run-verbose:
+    desc: Run the main weather station script with verbose logging
+    deps: [deps:install]
+    cmds:
+      - '{{.PYTHON_BIN}} -m backend.main -v'
 
   clean:
-    desc: Clean build artifacts and cache
+    desc: Clean up build artifacts and virtual environment
     cmds:
-      - rm -rf build/ dist/ *.egg-info .pytest_cache .mypy_cache .ruff_cache
+      - rm -rf {{.VENV}}
+      - rm -rf dist
+      - rm -rf build
+      - rm -rf *.egg-info
       - find . -type d -name "__pycache__" -exec rm -rf {} +
+      - find . -type f -name "*.pyc" -delete
+      - find . -type f -name "*.pyo" -delete
+      - find . -type f -name "*.pyd" -delete
+      - find . -type d -name ".pytest_cache" -exec rm -rf {} +
+      - find . -type d -name ".mypy_cache" -exec rm -rf {} +
+      - find . -type d -name ".coverage" -exec rm -rf {} +
+
+  build:
+    desc: Build distribution packages
+    deps: [clean, test, lint]
+    cmds:
+      - '{{.PYTHON_BIN}} -m build'
+
+  publish:
+    desc: Publish package to PyPI
+    deps: [build]
+    cmds:
+      - '{{.VENV}}/bin/twine upload dist/*'
+
+  sensor:simulate:
+    desc: Run a simulated sensor test
+    deps: [deps:install]
+    cmds:
+      - '{{.PYTHON_BIN}} -c "from backend.sensors import MockSensor; sensor = MockSensor(); print(sensor.get_reading())"'
+
+  config:validate:
+    desc: Validate project configuration
+    deps: [deps:install]
+    cmds:
+      - '{{.PYTHON_BIN}} -c "from backend import configure; configure(log_level=''DEBUG'')"'
+
+  security:scan:
+    desc: Run security vulnerability scan
+    deps: [deps:install]
+    cmds:
+      - '{{.VENV}}/bin/bandit -r backend'
+
+  profile:
+    desc: Profile the weather station performance
+    deps: [deps:install]
+    cmds:
+      - '{{.PYTHON_BIN}} -m cProfile -o profile.out backend/main.py'
+      - '{{.VENV}}/bin/snakeviz profile.out'

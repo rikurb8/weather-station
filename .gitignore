@@ -1,28 +1,105 @@
+# Python-specific ignores
 __pycache__/
 *.py[cod]
 *$py.class
-*.so
-.Python
-.venv/
-env/
-build/
-develop-eggs/
+
+# Distribution / packaging
 dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
+build/
 *.egg-info/
-.installed.cfg
 *.egg
+
+# Virtual environments
 .env
-.venv
+.venv/
+venv/
+ENV/
+env/
+
+# IDE-specific files
 .idea/
 .vscode/
 *.swp
+*.swo
+*~
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Logging and data files
+*.log
+*.log.*
+logs/
+weather_data/
+data/
+
+# Sensor and system-specific data
+*.db
+*.sqlite3
+*.jsonl
+
+# Sensor calibration and configuration
+*.cfg
+*.ini
+
+# Temporary files
+.tmp/
+tmp/
+
+# Operating System files
 .DS_Store
+Thumbs.db
+
+# Coverage and testing
+.coverage
+.pytest_cache/
+htmlcov/
+.tox/
+
+# Mypy cache
+.mypy_cache/
+
+# Environment and secrets
+.env
+.env.*
+secrets.yml
+*.pem
+*.key
+
+# Compiled files
+*.pyc
+*.pyo
+*.pyd
+
+# Specific to weather station project
+pdfs/
+*.pdf
+sensor_readings/
+station_logs/
+
+# Backup files
+*.bak
+*.gho
+*.ori
+*.orig
+*.tmp
+
+# Dependency management
+.uv/
+uv.lock
+
+# Development and build artifacts
+*.whl
+*.tar.gz
+
+# Profiling and performance
+*.prof
+*.pstats
+
+# Specific to weather station monitoring
+weather_station_config.json
+station_metadata.json
+
+# Ignore local development notes
+TODO.md
+NOTES.md

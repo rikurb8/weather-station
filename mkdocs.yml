@@ -1,49 +1,95 @@
-site_name: Weather Station Documentation
-site_description: Documentation for the Weather Station monitoring system
-repo_url: https://github.com/ridge/weather-station
-repo_name: ridge/weather-station
+site_name: Weather Station Monitoring System
+site_description: A robust, type-safe weather station monitoring system
+site_author: Weather Station Development Team
+site_url: https://github.com/yourusername/weather-station
 
+# Repository
+repo_name: weather-station
+repo_url: https://github.com/yourusername/weather-station
+
+# Theme Configuration
 theme:
   name: material
+  language: en
   palette:
-    - media: "(prefers-color-scheme: light)"
-      scheme: default
+    - scheme: default
       primary: blue
       accent: indigo
       toggle:
         icon: material/brightness-7
         name: Switch to dark mode
-    - media: "(prefers-color-scheme: dark)"
-      scheme: slate
+    - scheme: slate
       primary: blue
       accent: indigo
       toggle:
         icon: material/brightness-4
         name: Switch to light mode
+  
   features:
-    - navigation.instant
-    - navigation.tracking
+    - navigation.tabs
     - navigation.sections
     - navigation.expand
-    - navigation.top
-    - navigation.footer
     - navigation.indexes
-    - search.highlight
-    - search.share
+    - navigation.top
     - search.suggest
-    - content.code.copy
-    - content.code.annotate
+    - search.highlight
     - content.tabs.link
-    - toc.follow
-    - toc.integrate
+    - content.code.annotation
+    - content.code.copy
+    - header.autohide
 
+# Plugins
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          options:
+            docstring_style: google
+            show_source: true
+            show_inheritance_diagram: true
+  - gen-files:
+      scripts:
+        - scripts/gen_ref_pages.py
+  - literate-nav:
+      nav_file: SUMMARY.md
+  - section-index
+
+# Extensions
 markdown_extensions:
+  - abbr
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - admonition
+  - codehilite:
+      guess_lang: false
+  - toc:
+      permalink: true
+  - pymdownx.arithmatex:
+      generic: true
+  - pymdownx.betterem:
+      smart_enable: all
+  - pymdownx.caret
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_index: !!python/name:materialx.emoji.twemoji
+      emoji_generator: !!python/name:materialx.emoji.to_svg
   - pymdownx.highlight:
       anchor_linenums: true
       line_spans: __span
       pygments_lang_class: true
   - pymdownx.inlinehilite
-  - pymdownx.snippets
+  - pymdownx.keys
+  - pymdownx.magiclink:
+      repo_url_shorthand: true
+      user: yourusername
+      repo: weather-station
+  - pymdownx.mark
+  - pymdownx.smartsymbols
+  - pymdownx.snippets:
+      check_paths: true
   - pymdownx.superfences:
       custom_fences:
         - name: mermaid
@@ -51,64 +97,56 @@ markdown_extensions:
           format: !!python/name:pymdownx.superfences.fence_code_format
   - pymdownx.tabbed:
       alternate_style: true
-  - admonition
-  - pymdownx.details
-  - attr_list
-  - md_in_html
-  - def_list
   - pymdownx.tasklist:
       custom_checkbox: true
-  - pymdownx.emoji:
-      emoji_index: !!python/name:material.extensions.emoji.twemoji
-      emoji_generator: !!python/name:material.extensions.emoji.to_svg
-  - toc:
-      permalink: true
-      toc_depth: 3
 
+# Navigation
 nav:
-  - Home: index.md
-  - Getting Started: getting-started.md
-  - API Reference:
+  - Home: 
+    - index.md
+  - Getting Started:
+    - getting-started.md
+    - Configuration: configuration.md
+    - Examples: examples.md
+  - Components:
     - Models: api/models.md
     - Sensors: api/sensors.md
     - Station Controller: api/station.md
-  - Configuration: configuration.md
-  - Examples: examples.md
-  - Hardware Guide:
+  - Hardware:
+    - Overview: hardware.md
     - Assembly: assembly.md
-    - Hardware Setup: hardware.md
-    - Network Configuration: network.md
+    - Network: network.md
     - Power Management: power.md
-  - Software Guide: software.md
+  - Development:
+    - Contributing: contributing.md
+    - Code of Conduct: code_of_conduct.md
+  - About:
+    - License: license.md
+    - Release Notes: release_notes.md
 
-plugins:
-  - search
-  - git-revision-date-localized:
-      enable_creation_date: true
-  - minify:
-      minify_html: true
-      minify_js: true
-      minify_css: true
-      htmlmin_opts:
-        remove_comments: true
-  - tags
-
+# Extra Configuration
 extra:
-  version:
-    provider: mike
   social:
     - icon: fontawesome/brands/github
-      link: https://github.com/ridge/weather-station
-  analytics:
-    provider: google
-    property: !ENV GOOGLE_ANALYTICS_KEY
-  consent:
-    title: Cookie consent
-    description: >- 
-      We use cookies to recognize your repeated visits and preferences, as well
-      as to measure the effectiveness of our documentation and whether users
-      find what they're searching for. With your consent, you're helping us to
-      make our documentation better.
+      link: https://github.com/yourusername
+    - icon: fontawesome/brands/twitter
+      link: https://twitter.com/yourusername
+    - icon: fontawesome/brands/linkedin
+      link: https://linkedin.com/in/yourusername
+
+  version:
+    provider: mike
+
+# Copyright
+copyright: >
+  Copyright &copy; 2024 Weather Station Development Team. 
+  <a href="#__consent">Manage Cookies</a>
+
+# Analytics
+extra_javascript:
+  - https://unpkg.com/tablesort@5.3.0/dist/tablesort.min.js
+  - javascripts/tablesort.js
+  - javascripts/consent.js
 
 extra_css:
   - stylesheets/extra.css

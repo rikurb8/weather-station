@@ -1,5 +1,81 @@
-pytest>=7.0.0
-mypy>=1.0.0
-ruff>=0.1.0
-mkdocs>=1.5.0
-mkdocs-material>=9.0.0
+# Development Dependencies for Weather Station Project
+
+# Core Testing Frameworks
+pytest>=7.3.1
+pytest-asyncio>=0.21.0
+pytest-cov>=4.0.0
+pytest-sugar>=0.9.7
+pytest-watch>=4.2.0
+
+# Type Checking
+mypy>=1.3.0
+types-all
+
+# Linting and Formatting
+ruff>=0.0.272
+black>=23.3.0
+isort>=5.12.0
+pre-commit>=3.3.2
+
+# Security Scanning
+bandit>=1.7.5
+safety>=2.3.4
+
+# Performance and Profiling
+py-spy>=0.3.14
+snakeviz>=2.1.1
+memory-profiler>=0.60.0
+
+# Documentation
+mkdocs>=1.4.3
+mkdocs-material>=9.1.6
+mkdocstrings>=0.22.0
+mkdocs-gen-files>=0.5.0
+
+# Debugging and Development
+ipython>=8.12.0
+pudb>=2022.1.3
+rich>=10.16.2
+
+# Code Quality
+pylint>=2.17.4
+flake8>=6.0.0
+
+# Mocking and Testing Utilities
+hypothesis>=6.75.0
+faker>=18.7.0
+freezegun>=1.2.2
+
+# Async Testing
+asynctest>=0.13.0
+
+# Environment and Configuration
+python-dotenv>=1.0.0
+dynaconf>=3.1.12
+
+# Logging and Monitoring
+structlog>=23.1.0
+python-json-logger>=2.0.7
+
+# Build and Distribution
+build>=0.10.0
+twine>=4.0.2
+wheel>=0.40.0
+
+# Sensor and Hardware Simulation
+adafruit-circuitpython-bme280>=2.0.0
+board>=1.0.0
+
+# Alert and Notification Utilities
+aiosmtplib>=2.0.1
+twilio>=8.2.0
+
+# Optional: Machine Learning and Data Analysis
+numpy>=1.24.3
+pandas>=2.0.1
+scikit-learn>=1.2.2
+matplotlib>=3.7.1
+
+# Optional: Web and API Testing
+httpx>=0.24.0
+requests>=2.30.0

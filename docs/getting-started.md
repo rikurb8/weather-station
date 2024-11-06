@@ -1,37 +1,52 @@
-# Getting Started
+# Getting Started with Weather Station Monitoring System
 
-This guide will help you set up and run the weather station monitoring system.
+## System Requirements
+
+### Hardware
+- Python 3.9+
+- Recommended: Raspberry Pi 4 (2GB+ RAM)
+- Compatible sensor hardware
+- Network connectivity
+
+### Software Dependencies
+- Python 3.9 or higher
+- `uv` package manager
+- `pip` (optional)
 
 ## Installation
 
-### Prerequisites
+### 1. Create Project Directory
 
-- Python 3.9 or higher
-- `uv` package manager (recommended) or `pip`
-
-### Setting Up the Environment
-
-1. Create and activate a virtual environment:
 ```bash
-uv venv
-source .venv/bin/activate  # On Unix/macOS
-# or
-.venv\Scripts\activate  # On Windows
+mkdir weather-station
+cd weather-station
 ```
 
-2. Install the package:
+### 2. Set Up Virtual Environment
+
+```bash
+# Using uv (recommended)
+uv venv
+source .venv/bin/activate  # Unix/macOS
+# or
+.venv\Scripts\activate     # Windows
+```
+
+### 3. Install Package
+
+For production:
 ```bash
 uv pip install .
 ```
 
-For development installation:
+For development:
 ```bash
 uv pip install -e ".[dev]"
 ```
 
 ## Basic Usage
 
-Here's a minimal example to get started:
+### Minimal Example
 
 ```python
 import asyncio
@@ -43,27 +58,35 @@ from weather_station.station import WeatherStationController
 async def main():
     # Create station configuration
     station = WeatherStation(
-        station_id="my-station",
-        name="My Weather Station",
+        station_id="home-station",
+        name="Home Weather Monitor",
         latitude=51.5074,
         longitude=-0.1278,
         altitude_meters=100.0
     )
 
-    # Initialize sensor
-    sensor = MockSensor()
+    # Initialize mock sensor (replace with real sensor)
+    sensor = MockSensor(
+        temperature=22.5,
+        humidity=45.0,
+        pressure=1013.25
+    )
     
-    # Create controller
+    # Create controller with custom configuration
     controller = WeatherStationController(
         station=station,
         sensor=sensor,
         reading_interval=60.0,  # Read every minute
-        data_dir=Path("weather_data")
+        data_dir=Path("weather_data"),
+        alert_thresholds={
+            "high_temperature": 30.0,
+            "low_temperature": 10.0
+        }
     )
 
-    # Add simple alert handling
+    # Add alert handling
     def print_alert(alert):
-        print(f"Weather Alert: {alert.message}")
+        print(f"🚨 Weather Alert: {alert.message}")
 
     controller.add_alert_callback(print_alert)
 
@@ -77,152 +100,187 @@ if __name__ == "__main__":
     asyncio.run(main())
 ```
 
-Save this as `run_station.py` and run it:
-```bash
-python run_station.py
-```
-
-## Using Real Sensors
-
-The example above uses `MockSensor` for testing. For real hardware, implement a custom sensor class:
+### Real Sensor Implementation
 
 ```python
 from weather_station.sensors import BaseSensor, SensorError
 
-class MyCustomSensor(BaseSensor):
-    def __init__(self):
-        self.device = None
+class BME280Sensor(BaseSensor):
+    def __init__(self, i2c_bus=1, address=0x76):
+        super().__init__(sensor_id=f"bme280-{address}")
+        self.i2c_bus = i2c_bus
+        self.address = address
+        self._device = None
 
     def initialize(self) -> None:
         try:
-            # Initialize your hardware
-            self.device = setup_hardware()
+            import board
+            import adafruit_bme280.basic as adafruit_bme280
+            
+            i2c = board.I2C()
+            self._device = adafruit_bme280.Adafruit_BME280_I2C(
+                i2c, address=self.address
+            )
+            self.logger.info(f"BME280 sensor initialized on bus {self.i2c_bus}")
         except Exception as e:
-            raise SensorError(f"Failed to initialize sensor: {e}")
+            raise SensorError(f"Sensor initialization failed: {e}")
 
     def cleanup(self) -> None:
-        if self.device:
-            self.device.close()
-            self.device = None
+        if self._device:
+            # Perform any necessary cleanup
+            self._device = None
 
     def read_temperature(self) -> float:
-        if not self.device:
+        if not self._device:
             raise SensorError("Sensor not initialized")
-        return self.device.get_temperature()
+        return self._device.temperature
 
-    # Implement other required methods...
+    def read_humidity(self) -> float:
+        if not self._device:
+            raise SensorError("Sensor not initialized")
+        return self._device.relative_humidity
+
+    def read_pressure(self) -> float:
+        if not self._device:
+            raise SensorError("Sensor not initialized")
+        return self._device.pressure
 ```
 
-## Alert Handling
+## Advanced Configuration
 
-Add custom alert handling for different notification methods:
-
-```python
-import smtplib
-from email.message import EmailMessage
-
-def email_alert(alert):
-    msg = EmailMessage()
-    msg.set_content(alert.message)
-    msg['Subject'] = f'Weather Alert: {alert.alert_type}'
-    msg['From'] = "weather@example.com"
-    msg['To'] = "admin@example.com"
-
-    # Send email
-    with smtplib.SMTP('smtp.example.com', 587) as server:
-        server.starttls()
-        server.login("user", "password")
-        server.send_message(msg)
-
-# Add to controller
-controller.add_alert_callback(email_alert)
-```
-
-## Data Storage
-
-Data is automatically saved in JSONL format. Access stored data:
+### Logging Setup
 
 ```python
-import json
+import logging
 from pathlib import Path
-from datetime import datetime
 
-def read_days_data(date: datetime) -> list:
-    filename = f"readings_{date.strftime('%Y%m%d')}.jsonl"
-    filepath = Path("weather_data") / filename
+def configure_logging(log_dir: Path, level=logging.INFO):
+    log_dir.mkdir(parents=True, exist_ok=True)
     
-    readings = []
-    with open(filepath) as f:
-        for line in f:
-            readings.append(json.loads(line))
-    
-    return readings
-
-# Example: Read today's data
-today = datetime.now()
-readings = read_days_data(today)
+    logging.basicConfig(
+        level=level,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        handlers=[
+            logging.FileHandler(log_dir / "weather_station.log"),
+            logging.StreamHandler()
+        ]
+    )
 ```
 
-## Running Tests
+### Multiple Alert Handlers
 
-The project includes a test suite:
+```python
+def email_alert(alert):
+    # Implement email sending logic
+    send_email(
+        to="admin@example.com",
+        subject=f"Weather Alert: {alert.alert_type}",
+        body=str(alert)
+    )
 
-```bash
-# Run all tests
-pytest
+def sms_alert(alert):
+    # Implement SMS sending logic
+    send_sms(
+        to="+1234567890",
+        message=str(alert)
+    )
 
-# Run with coverage
-pytest --cov=weather_station
-
-# Run specific test file
-pytest tests/test_weather_station.py
+# Add multiple alert handlers
+controller.add_alert_callback(print_alert)
+controller.add_alert_callback(email_alert)
+controller.add_alert_callback(sms_alert)
 ```
 
-## Common Issues
+## Deployment Strategies
 
-### Sensor Initialization Failed
+### Docker Deployment
 
-If sensor initialization fails:
+Create a `Dockerfile`:
+```dockerfile
+FROM python:3.9-slim
 
-1. Check hardware connections
-2. Verify power supply
-3. Check permissions (for I2C/SPI devices)
-4. Ensure required kernel modules are loaded
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy project files
+COPY . .
+
+# Install the package
+RUN pip install .
+
+# Run the weather station
+CMD ["python", "-m", "weather_station.main"]
+```
+
+### Systemd Service
+
+Create `/etc/systemd/system/weather-station.service`:
+```ini
+[Unit]
+Description=Weather Station Monitoring Service
+After=network.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/weather-station
+ExecStart=/home/pi/weather-station/.venv/bin/python -m weather_station.main
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
+```
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Sensor Not Initializing**
+   - Check hardware connections
+   - Verify I2C/SPI settings
+   - Ensure proper power supply
+
+2. **Data Not Saving**
+   - Check directory permissions
+   - Verify disk space
+   - Ensure data directory exists
+
+3. **Network Connectivity**
+   - Check WiFi/Ethernet settings
+   - Verify firewall rules
+   - Test network connectivity
+
+### Diagnostic Commands
 
 ```bash
 # Check I2C devices
 i2cdetect -y 1
 
-# Check USB devices
-lsusb
-```
+# Check system logs
+journalctl -u weather-station.service
 
-### Data Storage Issues
-
-If data isn't being saved:
-
-1. Check directory permissions
-2. Verify disk space
-3. Ensure the data directory exists
-
-```bash
-# Create data directory if missing
-mkdir -p weather_data
-
-# Check permissions
-ls -l weather_data
+# Verify Python environment
+python -m weather_station.diagnostics
 ```
 
 ## Next Steps
 
-1. Implement a custom sensor for your hardware
-2. Set up meaningful alert thresholds
-3. Configure data backup
-4. Add visualization tools
-5. Set up automated deployment
+1. Implement custom sensors
+2. Set up advanced alert mechanisms
+3. Create data visualization tools
+4. Implement remote configuration
+5. Add machine learning for predictive analysis
 
-For more detailed information, see:
+## Resources
 
-- [API Reference](api/models.md)
 - [Configuration Guide](configuration.md)
+- [API Reference](api/index.md)
 - [Examples](examples.md)

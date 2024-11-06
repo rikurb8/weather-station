@@ -1,0 +1,67 @@
+# These are supported funding model platforms
+
+# GitHub Sponsors
+github: [yourusername]
+
+# Open Collective
+open_collective: weather-station
+
+# Patreon
+patreon: weatherstationproject
+
+# Ko-fi
+ko_fi: weatherstation
+
+# Buy Me a Coffee
+custom: ['https://www.buymeacoffee.com/weatherstation']
+
+# Additional Funding Options
+custom:
+  - https://opencollective.com/weather-station
+  - https://paypal.me/weatherstationproject
+
+# Sponsorship Tiers
+# Uncomment and customize as needed
+# sponsorships:
+#   - tier: Platinum Sponsor
+#     description: Major corporate sponsorship
+#     amount: $5000
+#   - tier: Gold Sponsor
+#     description: Significant project support
+#     amount: $2500
+#   - tier: Silver Sponsor
+#     description: Ongoing project contribution
+#     amount: $1000
+#   - tier: Bronze Sponsor
+#     description: Community support
+#     amount: $500
+
+# Funding Goals
+# funding_goals:
+#   - goal: Infrastructure Costs
+#     description: Cover cloud hosting and CI/CD expenses
+#     target: $10000
+#   - goal: Full-Time Development
+#     description: Support dedicated open-source development
+#     target: $50000
+#   - goal: Conference Sponsorship
+#     description: Support developer attendance at conferences
+#     target: $5000
+
+# Impact Statement
+funding_text: >
+  Your support helps maintain and improve the Weather Station Monitoring System. 
+  Contributions fund ongoing development, infrastructure, and community resources.
+
+# Contribution Benefits
+benefits:
+  - Logo placement in README
+  - Mention in release notes
+  - Priority feature consideration
+  - Direct communication with maintainers
+
+# Transparency Commitment
+transparency_url: https://opencollective.com/weather-station/expenses
+
+# Contact for Sponsorship Inquiries
+sponsorship_email: sponsors@weatherstation.dev

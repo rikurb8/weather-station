@@ -1,0 +1,150 @@
+name: 'Dependency Review'
+
+on:
+  pull_request:
+    branches: [main, develop]
+
+permissions:
+  contents: read
+
+jobs:
+  dependency-review:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 'Checkout Repository'
+        uses: actions/checkout@v3
+
+      - name: 'Dependency Review'
+        uses: actions/dependency-review-action@v3
+        with:
+          # Fail the build if there are vulnerabilities with a CVSS score of 7 or higher
+          fail-on-severity: high
+          
+          # Optionally allow specific vulnerabilities to be ignored
+          # Uncomment and modify as needed
+          # allow: []
+          
+          # Optionally block PRs with dependencies that have known vulnerabilities
+          block-pr-on-vulnerable-dependencies: true
+
+  python-dependency-check:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.9, "3.10", "3.11"]
+
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v3
+      with:
+        python-version: ${{ matrix.python-version }}
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install uv
+        uv pip install safety
+    
+    - name: Check for known security vulnerabilities
+      run: |
+        # Check all dependencies
+        safety check
+        
+        # Optional: Check only production dependencies
+        # safety check --ignore-cvss-below 7 --ignore-unpinned
+    
+    - name: Generate dependency report
+      run: |
+        # Create a detailed dependency report
+        uv pip list > dependency_report.txt
+        echo "Dependency report generated:"
+        cat dependency_report.txt
+
+  license-check:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Python
+      uses: actions/setup-python@v3
+      with:
+        python-version: "3.11"
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install uv
+        uv pip install pip-licenses
+    
+    - name: Check dependency licenses
+      run: |
+        # Generate a comprehensive license report
+        pip-licenses --format=markdown > LICENSE_REPORT.md
+        
+        # Check for incompatible licenses
+        pip-licenses --format=json | \
+        jq -r '.[] | select(.License | test("GPL|AGPL")) | .Package' > incompatible_licenses.txt
+        
+        if [ -s incompatible_licenses.txt ]; then
+          echo "Warning: Found potentially incompatible licenses:"
+          cat incompatible_licenses.txt
+          exit 1
+        fi
+
+  outdated-dependencies:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Python
+      uses: actions/setup-python@v3
+      with:
+        python-version: "3.11"
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install uv
+        uv pip install pip-outdated
+    
+    - name: Check for outdated dependencies
+      run: |
+        # Check for outdated packages
+        pip-outdated > outdated_dependencies.txt
+        
+        # If there are outdated dependencies, show them and exit with a warning
+        if [ -s outdated_dependencies.txt ]; then
+          echo "Outdated dependencies found:"
+          cat outdated_dependencies.txt
+          # Uncomment to fail the workflow on outdated dependencies
+          # exit 1
+        else
+          echo "All dependencies are up to date!"
+        fi
+
+  upload-reports:
+    needs: 
+      - dependency-review
+      - python-dependency-check
+      - license-check
+      - outdated-dependencies
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/upload-artifact@v3
+    
+    - name: Upload Dependency Reports
+      uses: actions/upload-artifact@v3
+      with:
+        name: dependency-reports
+        path: |
+          dependency_report.txt
+          LICENSE_REPORT.md
+          outdated_dependencies.txt
+          incompatible_licenses.txt
+        retention-days: 30
+
+env:
+  PYTHONUNBUFFERED: 1
+  FORCE_COLOR: 1
