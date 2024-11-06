@@ -1,0 +1,46 @@
+version: '3'
+
+tasks:
+  setup:
+    desc: Create and setup virtual environment
+    cmds:
+      - uv venv
+      - .venv/bin/uv pip install -e .
+      - .venv/bin/uv pip install -r requirements-dev.txt
+
+  test:
+    desc: Run tests with pytest
+    cmds:
+      - source .venv/bin/activate && pytest tests/ -v
+
+  docs:
+    desc: Build and serve documentation
+    cmds:
+      - source .venv/bin/activate && mkdocs serve
+
+  docs-build:
+    desc: Build documentation
+    cmds:
+      - source .venv/bin/activate && mkdocs build
+
+  lint:
+    desc: Run linting and type checking
+    cmds:
+      - source .venv/bin/activate && ruff check .
+      - source .venv/bin/activate && mypy .
+
+  format:
+    desc: Format code
+    cmds:
+      - source .venv/bin/activate && ruff format .
+
+  run:
+    desc: Run the application
+    cmds:
+      - source .venv/bin/activate && python -m better_file_manager
+
+  clean:
+    desc: Clean build artifacts and cache
+    cmds:
+      - rm -rf build/ dist/ *.egg-info .pytest_cache .mypy_cache .ruff_cache
+      - find . -type d -name "__pycache__" -exec rm -rf {} +

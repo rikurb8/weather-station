@@ -1,0 +1,38 @@
+[project]
+name = "weather-station"
+version = "0.1.0"
+description = "Weather station data collection and monitoring"
+requires-python = ">=3.9"
+dependencies = [
+    "pydantic>=2.0.0",
+    "pytest>=7.0.0",
+    "pytest-asyncio>=0.21.0",
+    "httpx>=0.24.0",
+    "mkdocs>=1.4.0",
+    "mkdocs-material>=9.0.0",
+    "mkdocs-git-revision-date-localized-plugin>=1.2.0",
+    "mkdocs-minify-plugin>=0.7.0",
+    "mkdocs-glightbox>=0.3.0",
+    "mike>=1.1.2",
+    "cairosvg>=2.7.0",  # Required for social cards
+    "pillow>=9.0.0",    # Required for social cards
+    "playwright>=1.40.0",  # For web rendering
+    "python-slugify>=8.0.1",  # For creating safe filenames
+    "sqlmodel>=0.0.8",  # For database storage
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+asyncio_default_fixture_loop_scope = "function"
+
+[tool.ruff]
+line-length = 88
+target-version = "py39"
+
+[tool.hatch.build.targets.wheel]
+packages = ["backend"]
