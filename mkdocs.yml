@@ -48,11 +48,6 @@ plugins:
             docstring_style: google
             show_source: true
             show_inheritance_diagram: true
-  - gen-files:
-      scripts:
-        - scripts/gen_ref_pages.py
-  - literate-nav:
-      nav_file: SUMMARY.md
   - section-index
 
 # Extensions
@@ -74,8 +69,8 @@ markdown_extensions:
   - pymdownx.caret
   - pymdownx.details
   - pymdownx.emoji:
-      emoji_index: !!python/name:materialx.emoji.twemoji
-      emoji_generator: !!python/name:materialx.emoji.to_svg
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
   - pymdownx.highlight:
       anchor_linenums: true
       line_spans: __span
@@ -109,6 +104,7 @@ nav:
     - Configuration: configuration.md
     - Examples: examples.md
   - Components:
+    - Overview: api/index.md
     - Models: api/models.md
     - Sensors: api/sensors.md
     - Station Controller: api/station.md
@@ -117,12 +113,8 @@ nav:
     - Assembly: assembly.md
     - Network: network.md
     - Power Management: power.md
-  - Development:
-    - Contributing: contributing.md
-    - Code of Conduct: code_of_conduct.md
-  - About:
-    - License: license.md
-    - Release Notes: release_notes.md
+    - Software: software.md
+    - Main Documentation: main.md
 
 # Extra Configuration
 extra:
