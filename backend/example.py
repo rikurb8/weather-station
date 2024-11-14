@@ -257,40 +257,42 @@ async def run_advanced_weather_station():
         failure_probability=0.1,
     )
 
-    # Create controller
-    controller = WeatherStationController(
-        station=station,
-        sensor=sensor,
-        reading_interval=30.0,  # Read every 30 seconds
-        data_dir=Path("weather_data"),
-        alert_thresholds={
-            "high_temperature": 35.0,
-            "low_temperature": 10.0,
-            "high_wind_speed": 15.0,
-            "high_humidity": 75.0,
-            "low_humidity": 25.0,
-        },
-        max_consecutive_errors=3,
-    )
+    # Use sensor within context manager
+    with sensor.sensor_context():
+        # Create controller
+        controller = WeatherStationController(
+            station=station,
+            sensor=sensor,
+            reading_interval=5.0,  # Read every 5 seconds for demo
+            data_dir=Path("weather_data"),
+            alert_thresholds={
+                "high_temperature": 35.0,
+                "low_temperature": 10.0,
+                "high_wind_speed": 15.0,
+                "high_humidity": 75.0,
+                "low_humidity": 25.0,
+            },
+            max_consecutive_errors=3,
+        )
 
-    # Add multiple alert handlers
-    controller.add_alert_callback(create_email_alert_handler("admin@example.com"))
-    controller.add_alert_callback(create_sms_alert_handler("+1234567890"))
-    controller.add_alert_callback(
-        lambda alert: logger.warning(f"ALERT: {alert.message}")
-    )
+        # Add multiple alert handlers
+        controller.add_alert_callback(create_email_alert_handler("admin@example.com"))
+        controller.add_alert_callback(create_sms_alert_handler("+1234567890"))
+        controller.add_alert_callback(
+            lambda alert: logger.warning(f"ALERT: {alert.message}")
+        )
 
-    # Run the station
-    try:
-        logger.info("Starting advanced weather station")
-        await controller.start()
-    except KeyboardInterrupt:
-        logger.info("Weather station monitoring interrupted")
-    except Exception as e:
-        logger.error(f"Unexpected error: {e}")
-    finally:
-        controller.stop()
-        logger.info("Weather station monitoring stopped")
+        # Run the station
+        try:
+            logger.info("Starting advanced weather station")
+            await controller.start()
+        except KeyboardInterrupt:
+            logger.info("Weather station monitoring interrupted")
+        except Exception as e:
+            logger.error(f"Unexpected error: {e}")
+        finally:
+            controller.stop()
+            logger.info("Weather station monitoring stopped")
 
 
 def main():
