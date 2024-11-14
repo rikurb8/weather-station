@@ -1,279 +1,134 @@
-import asyncio
-from datetime import datetime, UTC
-from typing import Optional, List, Callable, Dict, Any
-import logging
-from pathlib import Path
-import json
-from contextlib import asynccontextmanager
-
-from .models import WeatherStation, SensorReading, WeatherAlert
-from .sensors import SensorInterface, SensorError, BaseSensor
+from dataclasses import dataclass
+from typing import Optional, List, Dict
+from datetime import datetime
+import random
+from rich.console import Console
+from rich.prompt import Prompt
+from rich.panel import Panel
+from rich.text import Text
 
 
-class WeatherStationController:
+@dataclass
+class WeatherData:
+    temperature: float
+    humidity: float
+    pressure: float
+    timestamp: datetime = datetime.now()
+
+
+class Randy:
     """
-    Advanced weather station controller with comprehensive monitoring and error handling.
-
-    Provides async monitoring, configurable alert thresholds, and robust data logging.
+    An enthusiastic personality for the weather station.
+    Note: This character may resemble Randy from South Park, but they are not related.
     """
 
-    def __init__(
-        self,
-        station: WeatherStation,
-        sensor: SensorInterface,
-        reading_interval: float = 60.0,
-        data_dir: Optional[Path] = None,
-        alert_thresholds: Optional[Dict[str, Any]] = None,
-        max_consecutive_errors: int = 5,
-    ) -> None:
-        """
-        Initialize the weather station controller.
+    GREETINGS = [
+        "Oh hey there! Welcome to the weather station!",
+        "Ya ya ya, I am the weather lord ya ya ya!",
+        "Hey hey! Ready for some weather? I'm so excited I could take my shirt off!",
+        "Welcome to our Weather Station! I'm feeling pretty scientific today!",
+    ]
 
-        Args:
-            station: WeatherStation configuration
-            sensor: Sensor interface implementation
-            reading_interval: Interval between readings in seconds
-            data_dir: Directory for storing readings
-            alert_thresholds: Custom alert threshold configuration
-            max_consecutive_errors: Maximum number of consecutive sensor errors before stopping
-        """
-        self.station = station
-        self.sensor = sensor
-        self.reading_interval = reading_interval
-        self.data_dir = data_dir or Path("data") / station.station_id
-        self.alert_callbacks: List[Callable[[WeatherAlert], None]] = []
-        self._running = False
-        self._consecutive_errors = 0
-        self.max_consecutive_errors = max_consecutive_errors
+    WEATHER_COMMENTS = [
+        "Oh my god, this is like, the most perfect weather I've ever seen! Honey! Honey, come look at this!",
+        "I'm getting a clue about the weather... Oh yeah, big clue!",
+        "The temperature is giving me such a raging clue right now!",
+        "This is better than that time I was a Food Network star!",
+        "Just gonna get a little bit of weather, son. Tell Mom it's okay.",
+    ]
 
-        # Default alert thresholds
-        self.alert_thresholds = {
-            "high_temperature": 35.0,
-            "low_temperature": 0.0,
-            "high_wind_speed": 20.0,
-            "high_humidity": 90.0,
-            "low_humidity": 20.0,
-            "high_pressure": 1030.0,
-            "low_pressure": 980.0,
-        }
+    FAREWELL = [
+        "I'm out! Gotta go fight some other weather enthusiasts!",
+        "My wife is calling, gotta run!",
+        "Time to go do some 'research' at the local farm!",
+        "My son needs me for something probably not stupid at all!",
+    ]
 
-        # Update with custom thresholds if provided
-        if alert_thresholds:
-            self.alert_thresholds.update(alert_thresholds)
 
-        # Ensure data directory exists
-        self.data_dir.mkdir(parents=True, exist_ok=True)
+class WeatherStation:
+    def __init__(self, *, name: str = "South Park Weather Station"):
+        self.name: str = name
+        self.randy: Randy = Randy()
+        self.console: Console = Console()
+        self.weather_data: Optional[WeatherData] = None
 
-        # Configure logging
-        self.logger = logging.getLogger(f"station.{station.station_id}")
-
-    def add_alert_callback(self, callback: Callable[[WeatherAlert], None]) -> None:
-        """
-        Add a callback function for weather alerts.
-
-        Args:
-            callback: Function to be called when an alert is triggered
-        """
-        self.alert_callbacks.append(callback)
-
-    def _generate_alert(
-        self, reading: SensorReading, alert_type: str, severity: str, message: str
-    ) -> WeatherAlert:
-        """
-        Generate a weather alert with a unique ID.
-
-        Args:
-            reading: Sensor reading that triggered the alert
-            alert_type: Type of alert
-            severity: Alert severity
-            message: Alert description
-
-        Returns:
-            A WeatherAlert instance
-        """
-        return WeatherAlert(
-            alert_id=f"{alert_type}_{datetime.now(UTC).isoformat()}",
-            station_id=self.station.station_id,
-            alert_type=alert_type,
-            severity=severity,
-            message=message,
-            reading=reading,
+    def _generate_mock_weather(self) -> WeatherData:
+        """Generate mock weather data"""
+        return WeatherData(
+            temperature=random.uniform(-10, 30),
+            humidity=random.uniform(30, 90),
+            pressure=random.uniform(980, 1020),
         )
 
-    def _check_alerts(self, reading: SensorReading) -> List[WeatherAlert]:
-        """
-        Check sensor readings against predefined alert thresholds.
+    def _format_weather_panel(self, weather: WeatherData) -> Panel:
+        """Format weather data into a Rich panel"""
+        weather_text = Text()
+        weather_text.append(
+            f"Temperature: {weather.temperature:.1f}°C\n", style="bold cyan"
+        )
+        weather_text.append(f"Humidity: {weather.humidity:.1f}%\n", style="bold blue")
+        weather_text.append(
+            f"Pressure: {weather.pressure:.1f} hPa\n", style="bold magenta"
+        )
+        weather_text.append(
+            f"\nTimestamp: {weather.timestamp.strftime('%Y-%m-%d %H:%M:%S')}",
+            style="italic",
+        )
 
-        Args:
-            reading: Current sensor reading
+        return Panel(
+            weather_text,
+            title="[bold yellow]Current Weather Conditions[/]",
+            border_style="green",
+        )
 
-        Returns:
-            List of triggered alerts
-        """
-        alerts = []
+    def start(self) -> None:
+        """Start the weather station interface"""
+        self.console.clear()
+        self.console.print(
+            Panel(random.choice(self.randy.GREETINGS), style="bold yellow")
+        )
 
-        # Temperature alerts
-        if reading.temperature_celsius > self.alert_thresholds["high_temperature"]:
-            alerts.append(
-                self._generate_alert(
-                    reading,
-                    "high_temperature",
-                    "warning",
-                    f"High temperature: {reading.temperature_celsius}°C",
+        while True:
+            command = Prompt.ask(
+                "\n[bold green]What would you like to know about the weather?[/]\n"
+                "[dim](Type 'help' for commands, 'exit' to quit)[/]"
+            ).lower()
+
+            if command == "exit":
+                self.console.print(
+                    Panel(random.choice(self.randy.FAREWELL), style="bold yellow")
                 )
-            )
-        elif reading.temperature_celsius < self.alert_thresholds["low_temperature"]:
-            alerts.append(
-                self._generate_alert(
-                    reading,
-                    "low_temperature",
-                    "warning",
-                    f"Low temperature: {reading.temperature_celsius}°C",
+                break
+
+            elif command == "help":
+                self.console.print(
+                    Panel(
+                        "Available commands:\n"
+                        "- weather: Get current weather conditions\n"
+                        "- comment: Get Randy's thoughts on the weather\n"
+                        "- exit: Exit the weather station\n"
+                        "- help: Show this help message",
+                        title="[bold]Commands[/]",
+                        border_style="blue",
+                    )
                 )
-            )
 
-        # Wind speed alert
-        if (
-            reading.wind_speed_ms is not None
-            and reading.wind_speed_ms > self.alert_thresholds["high_wind_speed"]
-        ):
-            alerts.append(
-                self._generate_alert(
-                    reading,
-                    "high_wind",
-                    "warning",
-                    f"High wind speed: {reading.wind_speed_ms} m/s",
-                )
-            )
+            elif command == "weather":
+                self.weather_data = self._generate_mock_weather()
+                self.console.print(self._format_weather_panel(self.weather_data))
 
-        # Humidity alerts
-        if reading.humidity_percent > self.alert_thresholds["high_humidity"]:
-            alerts.append(
-                self._generate_alert(
-                    reading,
-                    "high_humidity",
-                    "info",
-                    f"High humidity: {reading.humidity_percent}%",
-                )
-            )
-        elif reading.humidity_percent < self.alert_thresholds["low_humidity"]:
-            alerts.append(
-                self._generate_alert(
-                    reading,
-                    "low_humidity",
-                    "info",
-                    f"Low humidity: {reading.humidity_percent}%",
-                )
-            )
-
-        # Pressure alerts
-        if reading.pressure_hpa > self.alert_thresholds["high_pressure"]:
-            alerts.append(
-                self._generate_alert(
-                    reading,
-                    "high_pressure",
-                    "info",
-                    f"High pressure: {reading.pressure_hpa} hPa",
-                )
-            )
-        elif reading.pressure_hpa < self.alert_thresholds["low_pressure"]:
-            alerts.append(
-                self._generate_alert(
-                    reading,
-                    "low_pressure",
-                    "info",
-                    f"Low pressure: {reading.pressure_hpa} hPa",
-                )
-            )
-
-        return alerts
-
-    def _trigger_alerts(self, alerts: List[WeatherAlert]) -> None:
-        """
-        Trigger alert callbacks for generated alerts.
-
-        Args:
-            alerts: List of alerts to trigger
-        """
-        for alert in alerts:
-            for callback in self.alert_callbacks:
-                try:
-                    callback(alert)
-                except Exception as e:
-                    self.logger.error(f"Alert callback failed: {e}")
-
-    def _save_reading(self, reading: SensorReading) -> None:
-        """
-        Save sensor reading to a daily JSONL file.
-
-        Args:
-            reading: Sensor reading to save
-        """
-        timestamp = reading.timestamp.strftime("%Y%m%d")
-        filepath = self.data_dir / f"readings_{timestamp}.jsonl"
-
-        try:
-            with open(filepath, "a") as f:
-                f.write(reading.model_dump_json() + "\n")
-        except Exception as e:
-            self.logger.error(f"Failed to save reading: {e}")
-
-    @asynccontextmanager
-    async def _sensor_monitoring(self):
-        """
-        Async context manager for sensor monitoring with error handling.
-
-        Manages sensor state and handles consecutive errors.
-        """
-        try:
-            yield
-        except Exception as e:
-            self._consecutive_errors += 1
-            self.logger.error(f"Sensor monitoring error: {e}")
-
-            if self._consecutive_errors >= self.max_consecutive_errors:
-                self.logger.critical(
-                    f"Max consecutive errors reached. Stopping station."
-                )
-                self.stop()
-
-    async def start(self) -> None:
-        """
-        Start the weather station monitoring asynchronously.
-
-        Continuously reads sensor data, saves readings, and checks for alerts.
-        """
-        self._running = True
-        self._consecutive_errors = 0
-
-        try:
-            while self._running:
-                async with self._sensor_monitoring():
-                    reading = self.sensor.get_reading()
-                    self.station.last_reading = reading
-
-                    self._save_reading(reading)
-                    alerts = self._check_alerts(reading)
-                    self._trigger_alerts(alerts)
-
-                    self.logger.info(
-                        f"Reading: {reading.temperature_celsius}°C, "
-                        f"{reading.humidity_percent}%, "
-                        f"{reading.pressure_hpa}hPa"
+            elif command == "comment":
+                if self.weather_data is None:
+                    self.console.print("[yellow]I need to check the weather first![/]")
+                else:
+                    self.console.print(
+                        Panel(
+                            random.choice(self.randy.WEATHER_COMMENTS),
+                            style="bold yellow",
+                        )
                     )
 
-                    await asyncio.sleep(self.reading_interval)
-
-        except asyncio.CancelledError:
-            self.logger.info("Weather station monitoring cancelled")
-        finally:
-            self._running = False
-
-    def stop(self) -> None:
-        """
-        Stop the weather station monitoring.
-
-        Gracefully terminates the monitoring process.
-        """
-        self._running = False
-        self.logger.info("Weather station monitoring stopped")
+            else:
+                self.console.print(
+                    "[red]I don't know what that means! Try 'help' for commands.[/]"
+                )

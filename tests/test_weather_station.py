@@ -11,7 +11,8 @@ from backend.station import WeatherStationController
 @pytest.fixture
 def mock_sensor():
     sensor = MockSensor()
-    return sensor
+    with sensor.sensor_context():
+        yield sensor
 
 
 @pytest.fixture
